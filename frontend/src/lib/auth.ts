@@ -1,4 +1,14 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// 実行時に環境変数を取得（Railway対応）
+const getApiBaseUrl = () => {
+  // ブラウザでの実行時
+  if (typeof window !== 'undefined') {
+    return window.location.origin.includes('railway.app') 
+      ? 'https://backend-production-954e.up.railway.app' 
+      : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+  }
+  // サーバーサイド
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+};
 
 interface LoginCredentials {
   email: string;
@@ -44,10 +54,11 @@ export class AuthService {
     formData.append('username', credentials.email);
     formData.append('password', credentials.password);
 
-    console.log('API_BASE_URL:', API_BASE_URL);
+    const apiBaseUrl = getApiBaseUrl();
+    console.log('API_BASE_URL:', apiBaseUrl);
     console.log('Login attempt for:', credentials.email);
 
-    const response = await fetch(`${API_BASE_URL}/token`, {
+    const response = await fetch(`${apiBaseUrl}/token`, {
       method: 'POST',
       body: formData,
     });
@@ -68,7 +79,8 @@ export class AuthService {
   }
 
   static async register(userData: RegisterData): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/register`, {
+    const apiBaseUrl = getApiBaseUrl();
+    const response = await fetch(`${apiBaseUrl}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,7 +99,8 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return null;
 
-    const response = await fetch(`${API_BASE_URL}/users/me`, {
+    const apiBaseUrl = getApiBaseUrl();
+    const response = await fetch(`${apiBaseUrl}/users/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
