@@ -29,3 +29,7 @@ app.include_router(payroll.router, prefix="/payroll", tags=["給与計算"])
 @app.get("/")
 def read_root():
     return {"message": f"{settings.PROJECT_NAME} is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}

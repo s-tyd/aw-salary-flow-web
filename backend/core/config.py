@@ -13,7 +13,7 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     
     # CORS
-    ALLOWED_ORIGINS: list = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://frontend-production-bc47.up.railway.app").split(",")
     
     # App
     PROJECT_NAME: str = "Agileware給与計算 API"
