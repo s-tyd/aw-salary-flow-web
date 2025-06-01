@@ -39,11 +39,8 @@ export default function LoginForm() {
             className="mx-auto w-16 h-16 mb-4"
           />
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-            Agileware給与計算
+            Login
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            ログイン
-          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (

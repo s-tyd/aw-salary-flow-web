@@ -12,8 +12,8 @@ class Settings:
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     
-    # CORS
-    ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://frontend-production-bc47.up.railway.app").split(",")
+    # CORS - 環境変数で設定、デフォルトはローカル開発用
+    ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
     
     # App
     PROJECT_NAME: str = "Agileware給与計算 API"
