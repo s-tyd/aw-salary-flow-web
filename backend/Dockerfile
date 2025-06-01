@@ -34,4 +34,4 @@ USER app
 EXPOSE 8000
 
 # 本番サーバーを起動（リロードなし）
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
