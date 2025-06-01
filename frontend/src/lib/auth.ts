@@ -2,11 +2,16 @@
 const getApiBaseUrl = () => {
   // ブラウザでの実行時
   if (typeof window !== 'undefined') {
-    return window.location.origin.includes('railway.app') 
-      ? 'https://backend-production-954e.up.railway.app' 
-      : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+    const hostname = window.location.hostname;
+    if (hostname.includes('railway.app')) {
+      return 'https://backend-production-954e.up.railway.app';
+    }
+    if (hostname !== 'localhost') {
+      // カスタムドメインの場合はapi.サブドメインを使用
+      return `https://api.${hostname}`;
+    }
   }
-  // サーバーサイド
+  // サーバーサイドまたはローカル開発
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 };
 
