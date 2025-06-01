@@ -33,5 +33,5 @@ USER app
 
 EXPOSE 8000
 
-# 本番サーバーを起動（マイグレーション実行後）
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# 本番サーバーを起動（マイグレーション + 管理者ユーザー作成後）
+CMD ["sh", "-c", "alembic upgrade head && python create_admin.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
