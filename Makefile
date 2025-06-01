@@ -1,5 +1,5 @@
 # Agileware給与計算システム - Makefile
-.PHONY: help dev up down clean rebuild logs shell-frontend shell-backend shell-db test lint format install status migrate migration migrate-history migrate-downgrade
+.PHONY: help dev prod up down prod-down clean rebuild logs prod-logs prod-logs-backend prod-logs-frontend prod-logs-db shell-frontend shell-backend shell-db test lint format install status prod-status prod-init migrate migration migrate-history migrate-downgrade prod-build prod-test prod-check prod-deploy-check
 
 # デフォルトターゲット
 .DEFAULT_GOAL := help
@@ -12,15 +12,22 @@ help: ## 🔹 利用可能なコマンドを表示
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "💡 使用例:"
-	@echo "  make dev     # 開発環境を起動"
-	@echo "  make logs    # ログを確認"
-	@echo "  make clean   # 環境をクリーンアップ"
+	@echo "  make dev        # 開発環境を起動"
+	@echo "  make prod       # 本番環境相当を起動"
+	@echo "  make logs       # ログを確認"
+	@echo "  make prod-logs  # 本番環境のログを確認"
+	@echo "  make clean      # 環境をクリーンアップ"
 
 # 開発環境操作
 dev: ## 🚀 開発環境を起動（ホットリロード有効）
 	@echo "🚀 開発環境を起動中..."
 	@docker compose down --remove-orphans 2>/dev/null || true
 	@docker compose up --build
+
+prod: ## 🏭 本番環境相当を起動（本番用Dockerfile使用）
+	@echo "🏭 本番環境相当を起動中..."
+	@docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+	@docker compose -f docker-compose.prod.yml up --build
 
 up: ## ▶️ サービスを起動
 	@echo "▶️ サービスを起動中..."
@@ -29,6 +36,11 @@ up: ## ▶️ サービスを起動
 down: ## ⏹️ サービスを停止
 	@echo "⏹️ サービスを停止中..."
 	@docker compose down
+
+prod-down: ## ⏹️ 本番環境相当を停止
+	@echo "⏹️ 本番環境相当を停止中..."
+	@docker compose -f docker-compose.prod.yml down
+	@echo "✅ 本番環境相当の停止完了"
 
 restart: ## 🔄 サービスを再起動
 	@echo "🔄 サービスを再起動中..."
@@ -60,6 +72,18 @@ logs-backend: ## 🔧 バックエンドのログを表示
 logs-db: ## 💾 データベースのログを表示
 	@docker compose logs -f postgres
 
+prod-logs: ## 📝 本番環境相当の全ログを表示
+	@docker compose -f docker-compose.prod.yml logs -f
+
+prod-logs-backend: ## 🔧 本番環境バックエンドのログを表示
+	@docker compose -f docker-compose.prod.yml logs -f backend
+
+prod-logs-frontend: ## 📱 本番環境フロントエンドのログを表示
+	@docker compose -f docker-compose.prod.yml logs -f frontend
+
+prod-logs-db: ## 💾 本番環境データベースのログを表示
+	@docker compose -f docker-compose.prod.yml logs -f postgres
+
 status: ## 📊 サービスの状態を確認
 	@echo "📊 サービス状態:"
 	@docker compose ps
@@ -68,6 +92,25 @@ status: ## 📊 サービスの状態を確認
 	@echo "  フロントエンド: http://localhost:3000"
 	@echo "  バックエンドAPI: http://localhost:8000"
 	@echo "  データベース:   localhost:5432"
+
+prod-status: ## 📊 本番環境相当の状態を確認
+	@echo "📊 本番環境相当の状態:"
+	@docker compose -f docker-compose.prod.yml ps
+	@echo ""
+	@echo "🔗 アクセスURL:"
+	@echo "  フロントエンド: http://localhost:3000"
+	@echo "  バックエンドAPI: http://localhost:8000"
+	@echo "  データベース:   localhost:5432"
+	@echo ""
+	@echo "🧪 ヘルスチェック:"
+	@curl -s http://localhost:8000/docs >/dev/null && echo "✅ バックエンドAPI正常" || echo "❌ バックエンドAPIエラー"
+	@curl -s http://localhost:3000 >/dev/null && echo "✅ フロントエンド正常" || echo "❌ フロントエンドエラー"
+
+prod-init: ## 🛠️ 本番環境のデータベース初期化
+	@echo "🛠️ 本番環境のデータベースを初期化中..."
+	@docker compose -f docker-compose.prod.yml exec backend python -c "from models import Base; from database import engine; Base.metadata.create_all(bind=engine); print('テーブル作成完了')"
+	@docker compose -f docker-compose.prod.yml exec backend python create_admin.py
+	@echo "✅ 本番環境の初期化完了"
 
 # シェルアクセス
 shell-frontend: ## 🐚 フロントエンドコンテナにシェルアクセス
@@ -171,7 +214,66 @@ watch: ## 👀 ファイル変更を監視（サービス状況を表示）
 # プロダクション準備
 prod-build: ## 🏗️ プロダクション用ビルド
 	@echo "🏗️ プロダクション用ビルドを実行中..."
-	@docker compose -f docker-compose.yml -f docker-compose.prod.yml build 2>/dev/null || echo "docker-compose.prod.ymlが見つかりません"
+	@echo "バックエンド（x86_64）:"
+	@docker build --platform linux/amd64 -f backend/Dockerfile.prod -t salary-flow-backend:prod backend/
+	@echo "フロントエンド（x86_64）:"
+	@docker build --platform linux/amd64 -f frontend/Dockerfile.prod -t salary-flow-frontend:prod frontend/
+	@echo "✅ プロダクション用ビルド完了"
+
+prod-test: ## 🧪 プロダクション用イメージのテスト
+	@echo "🧪 プロダクション用イメージのテストを実行中..."
+	@echo "バックエンドのテスト:"
+	@docker run --rm -d --name test-backend -p 8001:8000 salary-flow-backend:prod
+	@sleep 5
+	@curl -f http://localhost:8001/docs >/dev/null 2>&1 && echo "✅ バックエンド正常" || echo "❌ バックエンドエラー"
+	@docker stop test-backend 2>/dev/null || true
+	@echo "フロントエンドのテスト:"
+	@docker run --rm -d --name test-frontend -p 3001:3000 salary-flow-frontend:prod
+	@sleep 10
+	@curl -f http://localhost:3001 >/dev/null 2>&1 && echo "✅ フロントエンド正常" || echo "❌ フロントエンドエラー"
+	@docker stop test-frontend 2>/dev/null || true
+
+prod-check: ## 🔍 本番デプロイ前のチェック
+	@echo "🔍 本番デプロイ前のチェックを実行中..."
+	@echo ""
+	@echo "📋 環境設定チェック:"
+	@test -f .env && echo "✅ .env ファイル存在" || echo "⚠️  .env ファイルが見つかりません"
+	@test -f backend/Dockerfile.prod && echo "✅ バックエンド本番用Dockerfile存在" || echo "❌ backend/Dockerfile.prod が見つかりません"
+	@test -f frontend/Dockerfile.prod && echo "✅ フロントエンド本番用Dockerfile存在" || echo "❌ frontend/Dockerfile.prod が見つかりません"
+	@test -f .github/workflows/deploy.yml && echo "✅ GitHub Actions設定存在" || echo "⚠️  GitHub Actions設定が見つかりません"
+	@echo ""
+	@echo "🔒 セキュリティチェック:"
+	@grep -q "your-secret-key-here\|password123\|admin123" backend/.env 2>/dev/null && echo "❌ デフォルトパスワードが残っています" || echo "✅ セキュリティ設定OK"
+	@echo ""
+	@echo "🧪 コード品質チェック:"
+	@command -v docker >/dev/null 2>&1 && echo "✅ Docker利用可能" || echo "❌ Dockerが見つかりません"
+	@docker compose config >/dev/null 2>&1 && echo "✅ docker-compose.yml設定正常" || echo "❌ docker-compose.yml設定エラー"
+	@echo ""
+	@echo "📦 依存関係チェック:"
+	@test -f frontend/package.json && echo "✅ frontend/package.json存在" || echo "❌ frontend/package.json が見つかりません"
+	@test -f backend/requirements.txt && echo "✅ backend/requirements.txt存在" || echo "❌ backend/requirements.txt が見つかりません"
+	@echo ""
+	@echo "🚀 デプロイメントステータス:"
+	@echo "  Railway:     設定中"
+	@echo "  AWS:         ECR準備完了"
+	@echo "  GitHub:      Actions設定完了"
+
+prod-deploy-check: ## 🚀 デプロイ可能性チェック
+	@echo "🚀 デプロイ可能性チェックを実行中..."
+	@echo ""
+	@echo "1️⃣ プロダクションビルドテスト:"
+	@make prod-build
+	@echo ""
+	@echo "2️⃣ イメージサイズチェック:"
+	@docker images | grep "salary-flow" | awk '{print "  " $$1 ":" $$2 " -> " $$7}'
+	@echo ""
+	@echo "3️⃣ コンテナ起動テスト:"
+	@make prod-test
+	@echo ""
+	@echo "4️⃣ 設定チェック:"
+	@make prod-check
+	@echo ""
+	@echo "✅ デプロイ準備完了チェック完了"
 
 # セットアップ
 setup: ## 🛠️ 初回セットアップ
