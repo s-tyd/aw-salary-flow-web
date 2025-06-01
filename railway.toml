@@ -1,0 +1,35 @@
+[build]
+# Railwayでのビルド設定
+
+[deploy]
+# 自動デプロイを有効化
+restartPolicyType = "ON_FAILURE"
+replicas = 1
+
+# サービス定義
+[[deploy.services]]
+name = "postgres"
+source = "postgres:15"
+variables = { POSTGRES_USER = "user", POSTGRES_PASSWORD = "password", POSTGRES_DB = "salary_flow_db" }
+
+[[deploy.services]]
+name = "backend"
+source = "./backend"
+buildCommand = "pip install -r requirements.txt"
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+variables = { 
+  DATABASE_URL = "${{postgres.DATABASE_URL}}", 
+  SECRET_KEY = "your-secret-key-change-in-production",
+  ALGORITHM = "HS256",
+  ACCESS_TOKEN_EXPIRE_MINUTES = "30"
+}
+
+[[deploy.services]]
+name = "frontend"
+source = "./frontend"
+buildCommand = "npm ci && npm run build"
+startCommand = "npm start"
+variables = { 
+  NEXT_PUBLIC_API_URL = "${{backend.RAILWAY_PUBLIC_DOMAIN}}",
+  PORT = "$PORT"
+}

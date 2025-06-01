@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.github
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+.dockerignore
+
+# Development
+README.md
+CLAUDE.md
+dev-start.sh
+.env
+.env.local
+.env.development
+.env.test
+
+# Dependencies
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.nyc_output
+
+# Output directories
+.next
+out
+build
+dist
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temp
+*.tmp
+*.temp
